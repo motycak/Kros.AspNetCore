@@ -7,9 +7,9 @@
   - [Middlewares](#middlewares)
   - [Extensions](#extensions)
     - [Configuration](#configuration)
-      - [Príklad](#pr%c3%adklad)
+      - [Príklad](#príklad)
     - [ConfigurationBuilderExtensions](#configurationbuilderextensions)
-      - [Príklad](#pr%c3%adklad-1)
+      - [Príklad](#príklad-1)
     - [DistributedCacheExtensions](#distributedcacheextensions)
     - [CorsExtensions](#corsextensions)
   - [BaseStartup](#basestartup)
@@ -143,7 +143,7 @@ Obsahuje nastavenie `CORS` policy. Je možné povoliť všetky domény pomocou `
 
 ## BaseStartup
 
-Základná `Startup` trieda obsahujúca nastavenie `appsettings.json` a konfiguráciu `CORS` policy. V `development` režime sú pre `CORS` povolené všetky domény.
+Základná `Startup` trieda obsahujúca nastavenie `appsettings.json` a konfiguráciu `CORS` policy. V `development` a `test` režime sú pre `CORS` povolené všetky domény.
 
 ## Authorization
 
@@ -155,6 +155,9 @@ To add middleware, you must first register the related services `services.AddGat
 and then register `app.UseGatewayJwtAuthorization()` to the pipeline.
 
 You can use `JwtAuthorizationHelper` to generate a Jwt token.
+
+If you need to use claims from credential token right away, adding `JwtBearerClaimsMiddleware` after `GatewayAuthorizationMiddleware` will add claims from cretential token to httpContext claims.
+To add `JwtBearerClaimsMiddleware` register it's dependencies with `services.AddJwtBearerClaims` and register `app.UseJwtBearerClaims` to the pipeline. 
 
 ## JsonPatchDocumentExtensions
 
@@ -293,7 +296,8 @@ Už aj `GatewayAuthorizationMiddleware` podporuje `IServiceDiscoveryProvider`
       "ServiceName": "authorization",
       "PathName": "jwt"
     },
-    "CacheSlidingExpirationOffset": "00:00:00",
+    "CacheSlidingExpirationOffset": "00:01:00",
+    "CacheAbsoluteExpiration": "00:04:00",
     "IgnoredPathForCache": [
       "/organizations"
     ]

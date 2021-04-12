@@ -1,4 +1,6 @@
-﻿using Kros.MassTransit.AzureServiceBus.Endpoints;
+﻿using GreenPipes;
+using GreenPipes.Configurators;
+using Kros.MassTransit.AzureServiceBus.Endpoints;
 using Kros.Utils;
 using MassTransit;
 using MassTransit.Azure.ServiceBus.Core;
@@ -19,11 +21,14 @@ namespace Kros.MassTransit.AzureServiceBus
         #region Attributes
 
         private readonly string _connectionString;
-        private TimeSpan _tokenTimeToLive;
+        private readonly TimeSpan _tokenTimeToLive;
+        private readonly IRegistrationContext<IServiceProvider> _registrationContext;
         private readonly IServiceProvider _provider;
+        private readonly string _topicNamePrefix;
         private Action<IServiceBusBusFactoryConfigurator, IServiceBusHost> _busConfigurator;
         private readonly List<Endpoint> _endpoints = new List<Endpoint>();
         private Endpoint _currentEndpoint;
+        private Action<IRetryConfigurator> _retryConfigurator;
 
         #endregion
 
@@ -68,6 +73,18 @@ namespace Kros.MassTransit.AzureServiceBus
                 ? TimeSpan.FromSeconds(options.TokenTimeToLive)
                 : ConfigDefaults.TokenTimeToLive;
             _provider = provider;
+            _topicNamePrefix = options.TopicNamePrefix;
+            _retryConfigurator = CreateDefaultRetryConfigurator(options);
+        }
+
+        /// <summary>
+        /// Ctor.
+        /// </summary>
+        /// <param name="registrationContext">MassTransit registration context.</param>
+        public MassTransitForAzureBuilder(IRegistrationContext<IServiceProvider> registrationContext)
+            : this(registrationContext.Container)
+        {
+            _registrationContext = registrationContext;
         }
 
         /// <summary>
@@ -157,6 +174,30 @@ namespace Kros.MassTransit.AzureServiceBus
 
         #endregion
 
+        #region Retrying
+
+        /// <inheritdoc/>
+        public IBusConsumerBuilder UseMessageRetry(Action<IRetryConfigurator> configure)
+        {
+            _retryConfigurator = configure;
+            return this;
+        }
+
+        private Action<IRetryConfigurator> CreateDefaultRetryConfigurator(AzureServiceBusOptions options)
+        {
+            if (options.IntervalRetry?.Limit > 0)
+            {
+                int limit = options.IntervalRetry.Limit;
+                int interval = options.IntervalRetry.Interval;
+
+                return new Action<IRetryConfigurator>(retry =>
+                    retry.Interval(limit, interval));
+            }
+            return null;
+        }
+
+        #endregion
+
         #region Build
 
         /// <inheritdoc />
@@ -167,11 +208,17 @@ namespace Kros.MassTransit.AzureServiceBus
                 IServiceBusHost host = CreateServiceHost(busCfg);
 
                 ConfigureServiceBus(busCfg, host);
+                AddMessageTypePrefix(busCfg);
                 AddEndpoints(busCfg);
 
-                if (_provider != null)
+                if (_retryConfigurator != null)
                 {
-                    busCfg.UseHealthCheck(_provider);
+                    busCfg.UseMessageRetry(_retryConfigurator);
+                }
+
+                if (_registrationContext != null)
+                {
+                    busCfg.UseHealthCheck(_registrationContext);
                 }
             });
 
@@ -225,6 +272,15 @@ namespace Kros.MassTransit.AzureServiceBus
             foreach (Endpoint endpoint in _endpoints)
             {
                 endpoint.SetEndpoint(busCfg);
+            }
+        }
+
+        private void AddMessageTypePrefix(IServiceBusBusFactoryConfigurator configurator)
+        {
+            if (!string.IsNullOrWhiteSpace(_topicNamePrefix))
+            {
+                configurator.MessageTopology.SetEntityNameFormatter(
+                    new PrefixEntityNameFormatter(configurator.MessageTopology.EntityNameFormatter, _topicNamePrefix));
             }
         }
 

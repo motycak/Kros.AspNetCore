@@ -97,15 +97,6 @@ namespace Kros.AspNetCore.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; configuration section is missing or empty..
-        /// </summary>
-        internal static string GatewayJwtAuthorizationMissingSection {
-            get {
-                return ResourceManager.GetString("GatewayJwtAuthorizationMissingSection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to  IdentityServer handler for scheme {0}.
         /// </summary>
         internal static string IdentityHealthCheckBuilderName {
@@ -124,11 +115,29 @@ namespace Kros.AspNetCore.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; configuration section is missing or empty..
+        /// </summary>
+        internal static string OptionMissingSection {
+            get {
+                return ResourceManager.GetString("OptionMissingSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Service &apos;{0}&apos; does not have definition for path &apos;{1}&apos;..
         /// </summary>
         internal static string PathDefinitionDoesntExist {
             get {
                 return ResourceManager.GetString("PathDefinitionDoesntExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Payment required..
+        /// </summary>
+        internal static string PaymentRequired {
+            get {
+                return ResourceManager.GetString("PaymentRequired", resourceCulture);
             }
         }
         
